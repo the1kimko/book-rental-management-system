@@ -1,5 +1,5 @@
 import click
-from lib.models import User, Book, Rental, session
+from models import User, Book, Rental, session
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone, timedelta
 
@@ -100,7 +100,7 @@ def delete_book(book_id):
 @click.command()
 def list_books():
     """List all available books"""
-    books = session.query(Book).filter_by(available=True).all()
+    books = session.query(Book).filter(Book.available > 0).all()
     session.close()
     if books:
         for book in books:
@@ -211,13 +211,20 @@ def calculate_penalty(rental_id):
 @click.command()
 def list_rentals():
     """List all active rentals"""
-    rentals = session.query(Rental).filter(Rental.return_date == None).all()
-    session.close()
-    if rentals:
-        for rental in rentals:
-            click.echo(f"Rental ID: {rental.id}, User ID: {rental.user_id}, Book: {rental.book.title}")
-    else:
-        click.echo("No active rentals.")
+    try:
+        rentals = session.query(Rental).filter(Rental.return_date == None).all()
+        
+        if rentals:
+            for rental in rentals:
+                click.echo(f"Rental ID: {rental.id}, User ID: {rental.user_id}, Book: {rental.book.title}")
+        else:
+            click.echo("No active rentals.")
+
+    except Exception as e:
+        click.echo(f"Error: {str(e)}")
+
+    finally:
+        session.close()
 
 # ============ Add commands to CLI group ============
 
