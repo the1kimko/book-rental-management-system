@@ -109,10 +109,21 @@ def delete_book(book_id):
         session.close()
 
 @click.command()
-def list_books():
+@click.option('--sort-by', type=click.Choice(['genre', 'author'], case_sensitive=False), help="Sort books by genre or author")
+def list_books(sort_by):
     """List all available books"""
     session = Session()
-    books = session.query(Book).filter(Book.available > 0).all()
+
+    # Base query: List books that are available
+    book_query = session.query(Book).filter(Book.available > 0)
+    
+    # Apply sorting based on the sort_by option
+    if sort_by == "genre":
+        query = query.order_by(Book.genres)
+    elif sort_by == "author":
+        query = query.order_by(Book.author)
+    
+    books = book_query.all()
     session.close()
     if books:
         for book in books:
@@ -194,10 +205,10 @@ def return_book(rental_id):
             click.echo("Error: Rental either doesn't exist or the book has already been returned.")
             return
         
-        rental.return_date = datetime.utcnow()
+        rental.return_date = datetime.now(timezone.utc)
         rental.calculate_penalty()
 
-        book = session.query(Book).get(rental.book_id)
+        book = session.get(Book, rental.book_id)
         book.available += 1
 
         session.commit()

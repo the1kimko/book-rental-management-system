@@ -37,6 +37,7 @@ class Book(Base):
     title = Column(String, nullable=False)
     author = Column(String, nullable=False)
     available = Column(Integer, default=1)
+    genres = Column(String, nullable=True)
 
     # Many-to-many relationship through association table
     users = relationship("User", secondary="user_books", back_populates="books")
@@ -61,11 +62,20 @@ class Rental(Base):
     book = relationship("Book", back_populates="rentals")
 
     def calculate_penalty(self):
-        if self.return_date and self.return_date > self.due_date:
-            days_late = (self.return_date - self.due_date).days
-            self.penalty = days_late * 50  # KSh 50 per day late
-        else:
-            self.penalty = 0.0
-        session.commit()
+        session = Session()
+        try:
+            if self.return_date and self.return_date > self.due_date:
+                days_late = (self.return_date - self.due_date).days
+                self.penalty = days_late * 50  # KSh 50 per day late
+            else:
+                self.penalty = 0.0
+
+            session.add(self)
+            session.commit()
+        except Exception as e:
+            session.rollback()  # Rollback in case of any error
+            raise e  # Re-raise the exception after rollback
+        finally:
+            session.close()  
 
 Base.metadata.create_all(engine)

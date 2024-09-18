@@ -1,5 +1,5 @@
 from lib.models import Session, User, Book, Rental
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.exc import IntegrityError
 
 # Function to populate the database with seed data
@@ -11,15 +11,17 @@ def seed_data():
         User(name="John Doe", email="john@example.com"),
         User(name="Jane Smith", email="jane@example.com"),
         User(name="Alice Johnson", email="alice@example.com"),
+        User(name="Kimu Lami", email="lamiku@yahoo.com"),
     ]
     
     # Seed Books with Genre
     books = [
-        Book(title="1984", author="George Orwell", available=5),
-        Book(title="To Kill a Mockingbird", author="Harper Lee", available=3),
-        Book(title="The Great Gatsby", author="F. Scott Fitzgerald", available=4),
-        Book(title="The Hitchhiker's Guide to the Galaxy", author="Douglas Adams", available=2),
-        Book(title="Brave New World", author="Aldous Huxley", available=5)
+        Book(title="1984", author="George Orwell", genres="Dystopian", available=5),
+        Book(title="To Kill a Mockingbird", author="Harper Lee", genres="Fiction", available=3),
+        Book(title="The Great Gatsby", author="F. Scott Fitzgerald", genres="Classics", available=4),
+        Book(title="The Hitchhiker's Guide to the Galaxy", author="Douglas Adams", genres="Non-Fictional", available=2),
+        Book(title="Brave New World", author="Aldous Huxley", genres="Dystopian", available=5),
+        Book(title="Sinners", author="Susan Haluwa", genres="African Fiction", available=7)
     ]
 
     # Add Users to the database
@@ -53,16 +55,17 @@ def seed_data():
             print(f"Error adding book '{book.title}' by {book.author}.")
 
     # Rent books to users to populate the user_books join table
-    rent_book_for_seed(session, "John Doe", "1984")
-    rent_book_for_seed(session, "Jane Smith", "To Kill a Mockingbird")
+    rent_book_for_seed(session, "John Doe", "1984", days_rented_ago=20, due_days_ago=10)
+    rent_book_for_seed(session, "Jane Smith", "To Kill a Mockingbird", days_rented_ago=7, due_days_ago=10)
     rent_book_for_seed(session, "Alice Johnson", "The Great Gatsby")
+    rent_book_for_seed(session, "Kimu Lami", "Sinners", days_rented_ago=14, due_days_ago=10)  # Simulates a late return
 
     # Close the session after all operations are complete
     session.close()
     print("Database has been seeded successfully!")
 
 # Function to create a rental and update the user_books join table (for seed data)
-def rent_book_for_seed(session, user_name, book_title):
+def rent_book_for_seed(session, user_name, book_title, days_rented_ago=0, due_days_ago=0):
     user = session.query(User).filter_by(name=user_name).first()
     book = session.query(Book).filter_by(title=book_title).first()
 
@@ -76,8 +79,12 @@ def rent_book_for_seed(session, user_name, book_title):
             print(f"Book '{book.title}' is unavailable.")
         else:
             try:
+                # Create a rental with the option to simulate late return and penalties
+                rent_date = datetime.now(timezone.utc) - timedelta(days=days_rented_ago)
+                due_date = datetime.now(timezone.utc) - timedelta(days=due_days_ago) if due_days_ago > 0 else None
+
                 # Create a rental
-                rental = Rental(user_id=user.id, book_id=book.id, rent_date=datetime.now(timezone.utc))
+                rental = Rental(user_id=user.id, book_id=book.id, rent_date=rent_date, due_date=due_date)
                 
                 # Append the book to the user's books collection (this updates the user_books join table)
                 user.books.append(book)
@@ -85,10 +92,20 @@ def rent_book_for_seed(session, user_name, book_title):
                 # Reduce the available copies of the book
                 book.available -= 1
 
+                # If the book is overdue, simulate return and calculate penalty
+                if due_days_ago > 0:
+                    rental.return_date = datetime.now(timezone.utc)  # Simulate the return
+                    rental.calculate_penalty()  # Assuming this method calculates late fees based on the due date
+
+
                 # Commit the changes
                 session.add(rental)
                 session.commit()
-                print(f"Book '{book.title}' rented by {user.name}.")
+
+                if due_days_ago > 0:
+                    print(f"Book '{book.title}' rented by {user.name} with a penalty due to late return.")
+                else:
+                    print(f"Book '{book.title}' rented by {user.name}.")
             except IntegrityError:
                 session.rollback()
                 print(f"Failed to rent '{book.title}' to {user.name}.")
