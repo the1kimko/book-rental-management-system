@@ -7,7 +7,7 @@ Base = declarative_base()
 DATABASE_URL = "sqlite:///book_rental.db"
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
-session = Session()
+
 
 # Association table with a unique 'id' column
 class UserBook(Base):
