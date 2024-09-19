@@ -1,13 +1,8 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Table, Float
-from sqlalchemy.orm import relationship, sessionmaker, declarative_base
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Table, Float
+from sqlalchemy.orm import relationship, declarative_base
 from datetime import datetime, timedelta, timezone
 
 Base = declarative_base()
-
-DATABASE_URL = "sqlite:///book_rental.db"
-engine = create_engine(DATABASE_URL)
-Session = sessionmaker(bind=engine)
-
 
 # Association table with a unique 'id' column
 class UserBook(Base):
@@ -62,20 +57,8 @@ class Rental(Base):
     book = relationship("Book", back_populates="rentals")
 
     def calculate_penalty(self):
-        session = Session()
-        try:
-            if self.return_date and self.return_date > self.due_date:
-                days_late = (self.return_date - self.due_date).days
-                self.penalty = days_late * 50  # KSh 50 per day late
-            else:
-                self.penalty = 0.0
-
-            session.add(self)
-            session.commit()
-        except Exception as e:
-            session.rollback()  # Rollback in case of any error
-            raise e  # Re-raise the exception after rollback
-        finally:
-            session.close()  
-
-Base.metadata.create_all(engine)
+        if self.return_date and self.return_date > self.due_date:
+            days_late = (self.return_date - self.due_date).days
+            self.penalty = days_late * 50  # KSh 50 per day late
+        else:
+            self.penalty = 0.0
