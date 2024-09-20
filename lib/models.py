@@ -18,10 +18,10 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
 
     # Many-to-many relationship through association table
-    books = relationship("Book", secondary="user_books", back_populates="users")
+    books = relationship("Book", secondary="user_books", back_populates="users", cascade="all, delete")
 
     # Relationship to track rental records
-    rentals = relationship("Rental", back_populates="user")
+    rentals = relationship("Rental", back_populates="user", cascade="all, delete")
 
     def __repr__(self):
         return f"<User(name={self.name}, email={self.email})>"
@@ -48,7 +48,7 @@ class Rental(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     book_id = Column(Integer, ForeignKey('books.id'), nullable=False)
-    rent_date = Column(DateTime, default=datetime.utcnow)
+    rent_date = Column(DateTime, default=datetime.now(timezone.utc))
     return_date = Column(DateTime, nullable=True)
     due_date = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc) + timedelta(days=14))
     penalty = Column(Float, default=0.0)

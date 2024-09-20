@@ -29,14 +29,16 @@ class RentalService:
                 rent_date=datetime.now(timezone.utc),
                 due_date=datetime.now(timezone.utc) + timedelta(days=14)
             )
-            session.add(rental)
-
             # Update the user_books association table
             user.books.append(book)
             book.available -= 1
-
+            
+            session.add(rental)
             session.commit()
             return f"User '{user.name}' rented book '{book.title}'"
+        except Exception as e:
+            self.session.rollback()
+            raise e
         finally:
             session.close()
 

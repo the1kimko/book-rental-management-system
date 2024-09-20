@@ -114,5 +114,99 @@ cli.add_command(rent_book)
 cli.add_command(return_book)
 cli.add_command(list_rentals)
 
+# ============ Menu Interaction System ============
+
+def display_menu():
+    """Display menu options."""
+    print("\n=== Book Rental Management System ===")
+    print("Please select an option:")
+    print("0. Exit the program")
+    print("1. List all users")
+    print("2. Add a new user")
+    print("3. Delete a user")
+    print("4. List all books")
+    print("5. Add a new book")
+    print("6. Delete a book")
+    print("7. Search books by title or author")
+    print("8. Rent a book")
+    print("9. Return a rented book")
+    print("10. List all rentals")
+
+def run_menu():
+    """Run the interactive menu."""
+    while True:
+        display_menu()
+        choice = input("Enter your choice: ")
+
+        # Validate input is an integer
+        try:
+            choice = int(choice)
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+            continue
+
+        # Exit the program
+        if choice == 0:
+            print("Exiting the program.")
+            break
+
+        # Call respective commands
+        elif choice == 1:
+            users = user_service.list_users()
+            for user in users:
+                print(user)
+
+        elif choice == 2:
+            name = input("Enter user name: ")
+            email = input("Enter user email: ")
+            result = user_service.add_user(name, email)
+            print(result)
+
+        elif choice == 3:
+            user_id = input("Enter user ID to delete: ")
+            result = user_service.delete_user(user_id)
+            print(result)
+
+        elif choice == 4:
+            books = book_service.list_books(None)
+            for book in books:
+                print(book)
+
+        elif choice == 5:
+            title = input("Enter book title: ")
+            author = input("Enter book author: ")
+            available = input("Enter available copies (default 1): ")
+            genres = input("Enter genres: ")
+            result = book_service.add_book(title, author, available, genres)
+            print(result)
+
+        elif choice == 6:
+            book_id = input("Enter book ID to delete: ")
+            result = book_service.delete_book(book_id)
+            print(result)
+
+        elif choice == 7:
+            title = input("Enter book title to search: ")
+            author = input("Enter book author to search: ")
+            result = book_service.search_books(title, author)
+            print(result)
+
+        elif choice == 8:
+            user_id = input("Enter user ID: ")
+            book_id = input("Enter book ID: ")
+            result = rental_service.rent_book(user_id, book_id)
+            print(result)
+
+        elif choice == 9:
+            rental_id = input("Enter rental ID to return: ")
+            result = rental_service.return_book(rental_id)
+            print(result)
+
+        elif choice == 10:
+            rentals = rental_service.list_rentals()
+            for rental in rentals:
+                print(rental)
+
 if __name__ == '__main__':
-    cli()
+    # cli()
+    run_menu()
